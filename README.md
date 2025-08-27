@@ -98,3 +98,107 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+## Данные
+
+### Интерфейсы данных
+
+#### IProduct (Товар)
+
+interface IProduct {
+    id: string; // Уникальный идентификатор товара
+    description: string; // Описание товара
+    image: string; // URL изображения товара
+    title: string; // Название товара
+    category: string; // Категория товара
+    price: number | null; // Цена товара
+}
+IBuyer (Покупатель)
+
+interface IBuyer {
+    payment: TPayment; // Способ оплаты ('card' - онлайн, 'cash' - при получении)
+    email: string; // Email покупателя
+    phone: string; // Телефон покупателя
+    address: string; // Адрес доставки
+}
+Модели данных
+ProductCatalog
+Назначение: Управление списком товаров
+
+Конструктор:
+
+typescript
+constructor()
+Поля:
+
+_products: IProduct[] — список всех товаров
+_selectedProduct: IProduct | null — выбранный товар
+
+Методы:
+
+setProducts(products: IProduct[]): void - сохраняет массив товаров
+getProducts(): IProduct[] - возвращает все товары
+getProductById(id: string): IProduct | null - находит товар по ID
+setSelectedProduct(product: IProduct): void - устанавливает выбранный товар
+getSelectedProduct(): IProduct | null - возвращает выбранный товар
+
+#### Cart
+Назначение: Управление корзиной покупок
+
+Конструктор:
+
+typescript
+constructor()
+Поля:
+
+_items: IProduct[] — товары в корзине
+
+Методы:
+
+// getItems(): IProduct[] - возвращает товары в корзине
+// addItem(product: IProduct): void - добавляет товар в корзину
+// removeItem(product: IProduct): void - удаляет товар из корзины
+// clear(): void - очищает корзину
+// getTotalPrice(): number - вычисляет общую стоимость
+// getItemsCount(): number - возвращает количество товаров
+// hasItem(id: string): boolean - проверяет наличие товара
+
+#### Buyer
+Назначение: Управление данными покупателя
+
+Конструктор:
+
+// constructor()
+Поля:
+
+_payment: TPayment — способ оплаты
+_email: string — email
+_phone: string — телефон
+_address: string — адрес
+
+Методы:
+
+// setBuyerData(data: IBuyer): void - сохраняет все данные покупателя
+// setDataField(field: keyof IBuyer, value: any): void - устанавливает отдельное поле
+// getBuyerData(): IBuyer - возвращает все данные
+// clearData(): void - очищает данные
+// validateData(): boolean - проверяет корректность данных
+
+## Слой коммуникации
+
+### Класс WebLarekApi
+
+**Назначение:** Отвечает за взаимодействие с API сервера "Веб-ларек". Обеспечивает получение данных о товарах и отправку заказов.
+
+**Конструктор:**
+
+constructor(baseUrl: string, options?: RequestInit)
+Поля:
+
+// api: Api - экземпляр базового API класса для выполнения запросов
+
+Методы:
+
+// getProductList(): Promise<IProduct[]> - выполняет GET запрос к /product и возвращает массив товаров
+// submitOrder(orderData: IOrderRequest): Promise<IOrderResult> - выполняет POST запрос к /order с данными заказа и возвращает результат
+// get<T extends object>(uri: string): Promise<T> - обёртка над методом get базового API
+// post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T> - обёртка над методом post базового API
