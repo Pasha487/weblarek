@@ -1,8 +1,7 @@
-import { Api } from "../base/Api";
-import { IProduct, IApi, ApiPostMethods, IOrderResult, IApiResponse, IOrderRequest } from "../../types";
+import { IProduct, IApi, IOrderResult, IApiResponse, IOrderRequest } from "../../types";
 
-export class WebLarekApi implements IApi {
-    constructor(private api: Api) {}
+export class WebLarekApi {
+    constructor(private api: IApi) {}
 
     async getProductList(): Promise<IProduct[]> {
         try {
@@ -21,14 +20,5 @@ export class WebLarekApi implements IApi {
             console.error('Failed to submit order:', error);
             throw new Error('Не удалось оформить заказ');
         }
-    }
-
-    // Реализация интерфейса IApi
-    get<T extends object>(uri: string): Promise<T> {
-        return this.api.get<T>(uri);
-    }
-
-    post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T> {
-        return this.api.post<T>(uri, data, method);
     }
 }

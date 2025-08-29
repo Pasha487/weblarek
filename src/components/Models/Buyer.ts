@@ -1,4 +1,4 @@
-import { TPayment, IBuyer } from "../../types";
+import { TPayment, IBuyer, IValidationResult } from "../../types";
 
 export class Buyer {
     private _payment: TPayment | null = null;
@@ -31,25 +31,7 @@ export class Buyer {
         }
     }
 
-    // Индивидуальные методы для лучшей типобезопасности
-    setPayment(value: TPayment): void {
-        this._payment = value;
-    }
-
-    setEmail(value: string): void {
-        this._email = value;
-    }
-
-    setPhone(value: string): void {
-        this._phone = value;
-    }
-
-    setAddress(value: string): void {
-        this._address = value;
-    }
-
-    getBuyerData(): IBuyer | null {
-        if (!this.validateData()) return null;
+    getBuyerData(): IBuyer {
         return {
             payment: this._payment!,
             email: this._email,
@@ -65,8 +47,35 @@ export class Buyer {
         this._address = '';
     }
 
-    validateData(): boolean {
+    validateData(): IValidationResult {
+        const errors: IValidationResult = {};
+
         const { _payment, _email, _phone, _address } = this;
-        return !!_payment && !!_email && !!_phone && !!_address;
+        
+        // Валидация способа оплаты
+        if (!_payment) {
+            errors.payment = 'Способ оплаты не выбран';
+        }
+
+        // Валидация email
+        if (!_email) {
+            errors.email = 'Email не указан';
+        } else if (!/\S+@\S+\.\S+/.test(_email)) {
+            errors.email = 'Некорректный формат email';
+        }
+
+        // Валидация телефона
+        if (!_phone) {
+            errors.phone = 'Телефон не указан';
+        } else if (!/^\+?[0-9]{10,15}$/.test(_phone)) {
+            errors.phone = 'Некорректный формат телефона';
+        }
+
+        // Валидация адреса
+        if (!_address) {
+            errors.address = 'Адрес не указан';
+        }
+
+        return errors;
     }
 }

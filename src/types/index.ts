@@ -5,6 +5,10 @@ export interface IApi {
     post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
+export interface IValidationResult {
+    [key: string]: string;
+}
+
 export interface IProduct {
     id: string; 
     description: string; 

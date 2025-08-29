@@ -191,10 +191,18 @@ _address: string — адрес
 
 **Конструктор:**
 
-constructor(baseUrl: string, options?: RequestInit)
+constructor(baseUrl: string, options?: RequestInit) {
+    this.api = new Api(baseUrl, options); // Создаёт экземпляр базового API класса
+}
 Поля:
 
-// api: Api - экземпляр базового API класса для выполнения запросов
+api: Api // Экземпляр базового API класса для выполнения запросов
+Инициализируется в конструкторе через:
+    - baseUrl: базовый URL сервера
+    - options: дополнительные параметры запроса
+Создание происходит автоматически при вызове конструктора:
+    this.api = new Api(baseUrl, options)
+private api: Api;
 
 Методы:
 
