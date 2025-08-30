@@ -60,15 +60,11 @@ export class Buyer {
         // Валидация email
         if (!_email) {
             errors.email = 'Email не указан';
-        } else if (!/\S+@\S+\.\S+/.test(_email)) {
-            errors.email = 'Некорректный формат email';
         }
 
         // Валидация телефона
         if (!_phone) {
             errors.phone = 'Телефон не указан';
-        } else if (!/^\+?[0-9]{10,15}$/.test(_phone)) {
-            errors.phone = 'Некорректный формат телефона';
         }
 
         // Валидация адреса
