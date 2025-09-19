@@ -1,3 +1,7 @@
+// import { WebLarekApi } from "../components/Services/WebLarekApi";
+// import { CardCatalog } from "../components/views/Card/CardCatalog";
+// import { cloneTemplate } from "../utils/utils";
+
 export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
 
 export interface IApi {
@@ -46,3 +50,22 @@ export interface IOrderRequest {
     total: number;
     items: string[];
 }
+
+
+// events.on('catalog:changed', () => {
+//     const itemCards = productsModel.getItems().map((item) => {
+//         const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
+//             onClick: () => events.emit('card:select', item),
+//         });
+//         return card.render(item);
+//     });
+
+//     gallery.render({ catalog: itemCards });
+// });
+
+// WebLarekApi
+//     .getProductList()
+//     .then((data) => {
+//         productsModel.setItems(data.items);
+//     })
+//     .catch((err) => console.error(err));

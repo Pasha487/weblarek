@@ -1,4 +1,5 @@
 import { TPayment, IBuyer, IValidationResult } from "../../types";
+import { EventEmitter } from "../base/Events";
 
 export class Buyer {
     private _payment: TPayment | null = null;
@@ -6,11 +7,14 @@ export class Buyer {
     private _phone: string = '';
     private _address: string = '';
 
+    constructor(protected events: EventEmitter) {}
+
     setBuyerData(data: IBuyer): void {
         this._payment = data.payment;
         this._email = data.email;
         this._phone = data.phone;
         this._address = data.address;
+        this.emitChange();
     }
 
     // Универсальный метод для установки полей
@@ -29,6 +33,7 @@ export class Buyer {
                 this._address = value as string;
                 break;
         }
+        this.emitChange();
     }
 
     getBuyerData(): IBuyer {
@@ -73,5 +78,9 @@ export class Buyer {
         }
 
         return errors;
+    }
+
+    private emitChange(): void {
+        this.events.emit('buyer:changed', { buyer: this.getBuyerData() });
     }
 }

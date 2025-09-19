@@ -6,103 +6,238 @@ import { Cart } from './components/Models/Cart';
 import { WebLarekApi } from './components/Services/WebLarekApi';
 import { Api } from './components/base/Api';
 import { API_URL } from './utils/constants';
-import { IBuyer, IProduct } from './types';
+import { IProduct, IOrderRequest } from './types';
+import { EventEmitter } from './components/base/Events';
+import { ensureElement, cloneTemplate } from './utils/utils';
 
-// Тестирование ProductCatalog
-console.log('=== ТЕСТИРОВАНИЕ PRODUCT CATALOG ===');
+// Импорт компонентов представления
+import { Header } from './components/views/Header';
+import { Gallery } from './components/views/Gallery';
+import { Modal } from './components/views/Modal';
+import { Basket } from './components/views/Basket';
+import { OrderSuccess } from './components/views/OrderSuccess';
+import { CardCatalog } from './components/views/Card/CardCatalog';
+import { CardPreview } from './components/views/Card/CardPreview';
+import { CardBasket } from './components/views/Card/CardBasket';
+import { OrderForm } from './components/views/Form/OrderForm';
+import { ContactsForm } from './components/views/Form/ContactsForm';
 
-const productCatalog = new ProductCatalog();
-productCatalog.setProducts(apiProducts.items);
+// Инициализация брокера событий
+const events = new EventEmitter();
 
-console.log('Все товары:', productCatalog.getProducts());
-console.log('Количество товаров:', productCatalog.getProducts().length);
+// Инициализация моделей данных
+const productCatalog = new ProductCatalog(events);
+const cart = new Cart(events);
+const buyer = new Buyer(events);
 
-const testProduct = apiProducts.items[0];
-productCatalog.setSelectedProduct(testProduct);
-console.log('Выбранный товар:', productCatalog.getSelectedProduct());
-
-const foundProduct = productCatalog.getProductById(testProduct.id);
-console.log('Найденный товар по ID:', foundProduct);
-
-// Тестирование Cart (демонстрация без создания неиспользуемой переменной)
-console.log('\n=== ТЕСТИРОВАНИЕ CART ===');
-
-// Создаем экземпляр корзины
-const cart = new Cart();
-console.log('Корзина создана. Товаров:', cart.getItemsCount());
-
-// Добавляем товар в корзину
-cart.addItem(testProduct);
-console.log('Добавлен товар в корзину. Товаров:', cart.getItemsCount());
-console.log('Общая стоимость:', cart.getTotalPrice());
-
-// Проверяем наличие товара
-console.log('Товар в корзине:', cart.hasItem(testProduct.id));
-
-// Удаляем товар
-cart.removeItem(testProduct);
-console.log('Товар удален. Товаров:', cart.getItemsCount());
-
-// Тестирование Buyer (демонстрация без создания неиспользуемой переменной)
-console.log('\n=== ТЕСТИРОВАНИЕ BUYER ===');
-
-// Создаем экземпляр покупателя
-const buyer = new Buyer();
-const buyerData: IBuyer = {
-    payment: 'card',
-    email: 'test@example.com',
-    phone: '+79991234567',
-    address: 'ул. Тестовая, д. 1'
-};
-
-// Устанавливаем данные покупателя
-buyer.setBuyerData(buyerData);
-console.log('Данные покупателя установлены:', buyer.getBuyerData());
-
-// Изменяем отдельное поле
-buyer.setDataField('email', 'new@example.com');
-console.log('Email изменен:', buyer.getBuyerData().email);
-
-// Проверяем валидацию
-console.log('Данные валидны:', buyer.validateData());
-
-// Очищаем данные
-buyer.clearData();
-console.log('Данные очищены:', buyer.getBuyerData());
-
-// Тестирование работы с API
-console.log('\n=== ТЕСТИРОВАНИЕ РАБОТЫ С API ===');
-
-// Создаем экземпляр API
+// Инициализация API
 const api = new Api(API_URL);
 const webLarekApi = new WebLarekApi(api);
 
-// Получаем товары с сервера напрямую (без функции-обертки)
-console.log('Загрузка товаров с сервера...');
+// Инициализация компонентов представления
+const header = new Header(events, ensureElement('.header'));
+const gallery = new Gallery(ensureElement('.gallery'));
+const modal = new Modal(ensureElement('#modal-container'), events);
 
+// Получение шаблонов
+const cardCatalogTemplate = ensureElement<HTMLTemplateElement>('#card-catalog');
+const cardPreviewTemplate = ensureElement<HTMLTemplateElement>('#card-preview');
+const cardBasketTemplate = ensureElement<HTMLTemplateElement>('#card-basket');
+const basketTemplate = ensureElement<HTMLTemplateElement>('#basket');
+const orderTemplate = ensureElement<HTMLTemplateElement>('#order');
+const contactsTemplate = ensureElement<HTMLTemplateElement>('#contacts');
+const successTemplate = ensureElement<HTMLTemplateElement>('#success');
+
+// Обработка изменения каталога товаров
+events.on('catalog:changed', () => {
+    const products = productCatalog.getProducts();
+    const itemCards = products.map((item) => {
+        const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
+            onClick: () => events.emit('card:select', { product: item}),
+        });
+        return card.render(item);
+    });
+    gallery.render({ catalog: itemCards });
+});
+
+// Обработка выбора карточки товара
+events.on('card:select', (data: { product: IProduct }) => {
+    const product = data.product;
+    productCatalog.setSelectedProduct(product);
+    
+    const isInCart = cart.hasItem(product.id);
+    const card = new CardPreview(cloneTemplate(cardPreviewTemplate), {
+        onAddToCart: () => {
+            if (isInCart) {
+                events.emit('card:remove', { product });
+            } else {
+                events.emit('card:add', { product });
+            }
+        },
+    });
+
+    // Настройка кнопки в зависимости от состояния
+    if (product.price === null) {
+        card.buttonText = 'Недоступно';
+        card.buttonDisabled = true;
+    } else if (isInCart) {
+        card.buttonText = 'Удалить из корзины';
+        card.buttonDisabled = false;
+    } else {
+        card.buttonText = 'Купить';
+        card.buttonDisabled = false;
+    }
+    
+    modal.render({ content: card.render(product) });
+    modal.open();
+});
+
+// Обработка добавления товара в корзину
+events.on('card:add', (data: { product: IProduct }) => {
+    cart.addItem(data.product);
+    events.emit('basket:open');
+});
+
+// Обработка изменения корзины
+events.on('cart:changed', () => {
+    header.counter = cart.getItemsCount();
+});
+
+// Обработка открытия корзины
+events.on('basket:open', () => {
+    const basket = new Basket(cloneTemplate(basketTemplate), {
+        onOrder: () => events.emit('basket:order'),
+    });
+    
+    const cartItems = cart.getItems();
+    const basketItems = cartItems.map((item, index) => {
+        const card = new CardBasket(cloneTemplate(cardBasketTemplate), {
+            onRemove: () => events.emit('card:remove', { product: item }),
+        });
+        return card.render({ 
+            title: item.title,
+            price: item.price,
+            index: index + 1
+        } as any);
+    });
+
+    // Если корзина пуста, показываем сообщение
+    if (cartItems.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'basket__empty';
+        emptyMessage.textContent = 'Корзина пуста';
+        basket.items = [emptyMessage];
+        basket.buttonDisabled = true;
+        basket.buttonText = 'Оформить';
+    } else {
+        basket.items = basketItems;
+        basket.buttonDisabled = false;
+        basket.buttonText = 'Оформить';
+    }
+    
+    basket.total = cart.getTotalPrice();
+    modal.render({ content: basket.render() });
+    modal.open();
+});
+
+// Обработка удаления товара из корзины
+events.on('card:remove', (data: { product: IProduct }) => {
+    cart.removeItem(data.product);
+    events.emit('basket:open');
+});
+
+// Обработка оформления заказа
+events.on('basket:order', () => {
+    const orderForm = new OrderForm(cloneTemplate(orderTemplate), {
+        onSubmit: (event: Event) => {
+            event.preventDefault();
+            const formData = orderForm.formData;
+            buyer.setBuyerData({
+                payment: formData.payment,
+                address: formData.address,
+                email: '',
+                phone: '',
+            });
+            events.emit('order:submit', formData);
+        },
+        onPaymentChange: (payment) => {
+            events.emit('order.payment:change', { payment });
+        },
+    });
+    
+    modal.render({ content: orderForm.render() });
+    modal.open();
+});
+
+// Обработка отправки формы заказа
+events.on('order:submit', () => {
+    const contactsForm = new ContactsForm(cloneTemplate(contactsTemplate), {
+        onSubmit: (event: Event) => {
+            event.preventDefault();
+            const formData = contactsForm.formData;
+            buyer.setDataField('email', formData.email);
+            buyer.setDataField('phone', formData.phone);
+            events.emit('contacts:submit', formData);
+        },
+    });
+    
+    modal.render({ content: contactsForm.render() });
+    modal.open();
+});
+
+// Обработка отправки формы контактов
+events.on('contacts:submit', async (data: { email: string; phone: string }) => {
+    try {
+        const orderData: IOrderRequest = {
+            payment: buyer.getBuyerData().payment,
+            email: data.email,
+            phone: data.phone,
+            address: buyer.getBuyerData().address,
+            total: cart.getTotalPrice(),
+            items: cart.getItems().map(item => item.id),
+        };
+        
+        const result = await webLarekApi.submitOrder(orderData);
+        
+        const orderSuccess = new OrderSuccess(cloneTemplate(successTemplate), {
+            onClose: () => {
+                modal.close();
+                cart.clear();
+                buyer.clearData();
+            },
+        });
+        
+        orderSuccess.render({ total: result.total });
+        modal.render({ content: orderSuccess.render() });
+        modal.open();
+        
+    } catch (error) {
+        console.error('Ошибка при оформлении заказа:', error);
+        // Показываем ошибку пользователю
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'order-error';
+        errorMessage.innerHTML = `
+            <h2 class="modal__title">Ошибка</h2>
+            <p>Произошла ошибка при оформлении заказа. Попробуйте еще раз.</p>
+            <button class="button" onclick="document.querySelector('.modal__close').click()">Закрыть</button>
+        `;
+        modal.render({ content: errorMessage });
+        modal.open();
+    }
+});
+
+// Обработка закрытия модального окна
+events.on('modal:close', () => {
+    modal.close();
+});
+
+// Загрузка товаров с сервера
 webLarekApi.getProductList()
     .then((products: IProduct[]) => {
-        // Сохраняем товары в модель каталога
         productCatalog.setProducts(products);
-        
-        console.log('Товары успешно загружены с сервера:');
-        console.log('Количество товаров:', productCatalog.getProducts().length);
-        
-        if (products.length > 0) {
-            const firstProduct = products[0];
-            console.log('Первый товар:', firstProduct);
-            
-            // Тестируем поиск товара по ID
-            const foundProduct = productCatalog.getProductById(firstProduct.id);
-            console.log('Найденный товар по ID:', foundProduct);
-        }
     })
     .catch((error) => {
         console.error('Ошибка при загрузке товаров:', error);
         // Fallback на локальные данные
-        console.log('Используем локальные данные...');
         productCatalog.setProducts(apiProducts.items);
-        console.log('Локальные товары загружены:', productCatalog.getProducts().length);
     });
-
-console.log('Запрос на сервер отправлен, ожидаем ответ...');

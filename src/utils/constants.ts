@@ -10,3 +10,10 @@ export const settings = {
     
 };
 
+export const categoryMap = {
+    'софт-скил': 'card__category_soft',
+    'дополнительное': 'card__category_additional',
+    'другое': 'card__category_other',
+    'хард-скил': 'card__category_hard',
+    'кнопка': 'card__category_button'
+};
