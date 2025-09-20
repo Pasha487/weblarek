@@ -29,10 +29,4 @@ export class OrderSuccess extends Component<IOrderSuccess> {
     set total(value: number) {
         this.setText(this._description, `Списано ${value} синапсов`);
     }
-
-    private setText(element: HTMLElement, value: string) {
-        if (element) {
-            element.textContent = value;
-        }
-    }
 }
