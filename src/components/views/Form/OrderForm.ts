@@ -1,5 +1,5 @@
 import { ensureElement } from "../../../utils/utils"; 
-import { TPayment, IValidationResult } from "../../../types"; 
+import { TPayment } from "../../../types"; 
 import { Form, IFormActions } from "./Form"; 
 
 export interface IOrderFormActions extends IFormActions { 
@@ -71,16 +71,4 @@ export class OrderForm extends Form {
             button.classList.toggle('button_alt-active', button.name === payment); 
         });
     } 
-
-    // Метод для установки ошибок валидации из модели
-    setValidationErrors(errors: IValidationResult): void {
-        const errorMessage = Object.values(errors).filter(Boolean);
-        if (errorMessage.length > 0) {
-            this.errors = errorMessage.join(', ');
-            this.valid = false;
-        } else {
-            this.clearErrors();
-            this.valid = true;
-        }
-    }
 } 

@@ -1,5 +1,4 @@
 import { ensureElement } from "../../../utils/utils"; 
-import { IValidationResult } from "../../../types";
 import { Form, IFormActions } from "./Form"; 
 
 export interface IContactsFormActions extends IFormActions { 
@@ -57,16 +56,5 @@ export class ContactsForm extends Form {
             email: this.email, 
             phone: this.phone 
         }; 
-    }
-
-    setValidationErrors(errors: IValidationResult): void {
-        const errorMessages = Object.values(errors).filter(Boolean);
-        if (errorMessages.length > 0) {
-            this.errors = errorMessages.join(', ');
-            this.valid = false;
-        } else {
-            this.clearErrors();
-            this.valid = true;
-        }
     }
 }

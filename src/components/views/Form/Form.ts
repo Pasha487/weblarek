@@ -1,9 +1,10 @@
+import { IValidationResult } from "../../../types";
 import { ensureElement } from "../../../utils/utils"; 
 import { Component } from "../../base/Component"; 
 
 export interface IFormActions { 
     onSubmit?: (event: Event) => void; 
-} 
+}
 
 export class Form extends Component<{}> { 
     protected _submitButton: HTMLButtonElement; 
@@ -31,4 +32,15 @@ export class Form extends Component<{}> {
     clearErrors(): void { 
         this.setText(this._errorsElement, ''); 
     } 
+
+    setValidationErrors(errors: IValidationResult): void {
+        const errorMessage = Object.values(errors).filter(Boolean);
+        if (errorMessage.length > 0) {
+            this.errors = errorMessage.join(', ');
+            this.valid = false;
+        } else {
+            this.clearErrors();
+            this.valid = true;
+        }
+    }
 } 
